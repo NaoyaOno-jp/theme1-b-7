@@ -1,13 +1,99 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>イキテル</title>
-	<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>イキテル</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script src="App.js" defer></script>
 </head>
-<body>
-	<h1>イキテル</h1>
-	<script src="app.js" defer></script>
+<body data-status="ok">
+  <div class="app">
+
+    <!-- ① ヘッダー -->
+    <header id="app-header" class="app-header">
+      <h1 class="app-title">イキテル</h1>
+      <div class="watched">
+        <p class="watched-caption">見守っている人</p>
+        <p id="watched-name" class="watched-name">母（花子さん）</p>
+      </div>
+    </header>
+
+    <main class="app-main">
+
+      <!-- ② 状態カード：data-status は ok / check / off（JSが切り替える） -->
+      <section id="status-card" class="status-card" data-status="ok" aria-live="polite">
+        <div id="status-icon" class="status-icon" aria-hidden="true">
+          <!-- 3つとも置く。CSSが状態に合わせて1つだけ見せる -->
+          <svg class="icon-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+          <svg class="icon-check" viewBox="0 0 24 24"><path d="M12 6v8"/><path d="M12 18.5h.01"/></svg>
+          <svg class="icon-off" viewBox="0 0 24 24"><path d="M9 3v5"/><path d="M15 3v5"/><path d="M7 8h10v3a5 5 0 0 1-10 0z"/><path d="M12 16v5"/></svg>
+        </div>
+        <p id="status-label" class="status-label">イキテル</p>
+        <p id="status-sub" class="status-sub">いつもどおり電気が使われています</p>
+        <p id="away-badge" class="away-badge" hidden>留守中：通知を止めています</p>
+      </section>
+
+      <!-- ③ 最後に電気が動いた時刻 ／ ④ 通知までの残り時間 -->
+      <section class="time-card" aria-label="時刻">
+        <div class="time-row">
+          <p class="caption">最後に電気がついた・消えた</p>
+          <p id="last-change" class="last-change">今日 10:33（1時間12分前）</p>
+        </div>
+        <div class="time-row">
+          <div class="remain-head">
+            <p class="caption">通知まで</p>
+            <p id="remain-text" class="remain-text">あと 14時間48分</p>
+          </div>
+          <div id="remain-bar" class="remain-bar" aria-hidden="true">
+            <div id="remain-bar-fill" class="remain-bar-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ⑤ 直近の記録：見本の行を1つだけ置く（JSが起動時に作り直す） -->
+      <section class="record-card" aria-labelledby="record-title">
+        <h2 id="record-title" class="record-title">直近の記録</h2>
+        <ul id="record-list" class="record-list">
+          <li class="record" data-event="on">
+            <span class="record-dot"></span>
+            <span class="record-time">今日 10:33</span>
+            <span class="record-event">点灯</span>
+          </li>
+        </ul>
+      </section>
+
+    </main>
+
+    <!-- ⑥ ボタン -->
+    <nav class="actions" aria-label="操作">
+      <a id="btn-call" class="btn btn-call" href="tel:" aria-label="母に電話する">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
+        <span>電話する</span>
+      </a>
+      <button id="btn-confirm" class="btn btn-confirm" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>
+        <span>無事を確認</span>
+      </button>
+      <button id="btn-away" class="btn btn-away" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        <span class="btn-away-label">留守にする</span>
+      </button>
+    </nav>
+
+    <!-- デモ操作（発表用）：実物の中継器の代わりに入力を作る -->
+    <section id="demo-panel" class="demo-panel" aria-label="デモ操作">
+      <h2 class="demo-title">デモ操作（中継器の代わり）</h2>
+      <p class="demo-clock">デモの時刻：<span id="demo-clock">--:--</span></p>
+      <div class="demo-buttons">
+        <button id="demo-light" class="demo-btn" type="button">電気をつける</button>
+        <button id="demo-off" class="demo-btn" type="button">中継器を抜く</button>
+        <button id="demo-1h" class="demo-btn" type="button">1時間進める</button>
+        <button id="demo-16h" class="demo-btn" type="button">16時間経過</button>
+      </div>
+    </section>
+
+  </div>
 </body>
 </html>
