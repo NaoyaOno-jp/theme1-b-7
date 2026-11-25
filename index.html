@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="style.css">
   <script src="login.js?v=firebase-20261125" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=demo-controls-1" defer></script>
 </head>
 <body data-status="ok">
   <div id="session-check" class="session-check">
@@ -90,18 +90,6 @@
         <span class="btn-away-label">留守にする</span>
       </button>
     </nav>
-
-    <!-- デモ操作（発表用）：実物の中継器の代わりに入力を作る -->
-    <section id="demo-panel" class="demo-panel" aria-label="デモ操作">
-      <h2 class="demo-title">デモ操作（中継器の代わり）</h2>
-      <p class="demo-clock">デモの時刻：<span id="demo-clock">--:--</span></p>
-      <div class="demo-buttons">
-        <button id="demo-light" class="demo-btn" type="button">電気をつける</button>
-        <button id="demo-off" class="demo-btn" type="button">中継器を抜く</button>
-        <button id="demo-1h" class="demo-btn" type="button">1時間進める</button>
-        <button id="demo-16h" class="demo-btn" type="button">16時間経過</button>
-      </div>
-    </section>
 
   </div>
 </body>
