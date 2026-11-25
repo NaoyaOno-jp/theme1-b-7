@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>初回設定 | イキテル</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="stylesheet" href="login.css?v=watched-name-1">
+  <script src="login.js?v=watched-name-1" defer></script>
+</head>
+<body>
+  <main class="login-container">
+    <p class="site-title"><img src="logo.svg" width="40" height="40" alt="">イキテル</p>
+    <h1 class="name-page-title">初回設定</h1>
+    <p class="login-message">計測対象の名前を入力してください。</p>
+    <p id="nameStatus" class="form-status" role="status">ログイン状態を確認しています…</p>
+    <form id="watchedNameForm" class="auth-form" data-mode="setup" method="post" hidden>
+      <label for="watchedNameInput">計測対象の名前</label>
+      <input type="text" id="watchedNameInput" maxlength="40" required>
+      <button type="submit">保存してはじめる</button>
+    </form>
+    <p id="nameError" class="form-error" role="alert"></p>
+    <p class="auth-switch"><button id="nameLogout" class="text-button" type="button">ログアウト</button></p>
+    <noscript>初回設定にはJavaScriptを有効にしてください。</noscript>
+  </main>
+</body>
+</html>
