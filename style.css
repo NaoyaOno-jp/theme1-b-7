@@ -44,6 +44,11 @@ p { margin: 0; }
   background: #FAFAF9;
 }
 
+.app[hidden] { display: none; }
+
+.session-check { max-width: 390px; margin: 32px auto; padding: 0 20px; }
+.session-check button { margin-top: 12px; }
+
 .caption { font-size: 12px; color: var(--color-sub); }
 
 /* ---------- ① ヘッダー ---------- */
@@ -57,9 +62,22 @@ p { margin: 0; }
   border-bottom: 1px solid var(--color-line);
 }
 .app-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.04em; }
+.app-header-actions { display: flex; align-items: center; gap: 12px; }
 .watched { text-align: right; }
 .watched-caption { font-size: 12px; color: var(--color-sub); }
 .watched-name { font-size: 15px; font-weight: 500; }
+.logout-button {
+  padding: 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.logout-button:hover { background: #F5F5F4; }
 
 .app-main {
   flex: 1;

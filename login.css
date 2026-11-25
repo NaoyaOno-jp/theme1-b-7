@@ -77,6 +77,11 @@ body {
     background-color: #246b6c;
 }
 
+#loginForm button:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
 /* エラーメッセージ */
 #errorMessage {
     margin-top: 16px;
