@@ -12,6 +12,7 @@
   const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
   const dashboard = document.getElementById("dashboard");
+  const watchedNameForm = document.getElementById("watchedNameForm");
   let authSetup;
 
   // 読み込み方はFirebase公式資料を参照。アプリの初期化と画面処理はイキテル用の実装。
@@ -163,19 +164,125 @@
     setSubmitting(false);
   }
 
+  async function getVerifiedUser() {
+    const { auth, authSdk } = await getFirebase();
+    const user = auth.currentUser;
+    if (!user) return null;
+
+    try {
+      // Firebase公式APIでトークンを更新し、セッションを確認する。
+      // https://firebase.google.com/docs/reference/js/auth.user#usergetidtoken
+      await user.getIdToken(true);
+      return user;
+    } catch (error) {
+      if (!["auth/user-disabled", "auth/user-token-expired", "auth/invalid-user-token", "auth/user-not-found"].includes(error.code)) {
+        throw error;
+      }
+      await authSdk.signOut(auth);
+      return null;
+    }
+  }
+
+  async function signOutToLogin() {
+    const { auth, authSdk } = await getFirebase();
+    await authSdk.signOut(auth);
+    location.replace("login.html");
+  }
+
+  function watchedNameKey(user) {
+    return `ikiteru-theme1-b-7:watched-name:${user.uid}`;
+  }
+
+  async function setupWatchedNameForm() {
+    if (!canUseAuth) {
+      location.replace("login.html");
+      return;
+    }
+
+    const input = document.getElementById("watchedNameInput");
+    const status = document.getElementById("nameStatus");
+    const errorMessage = document.getElementById("nameError");
+    const logoutButton = document.getElementById("nameLogout");
+    const isFirstSetup = watchedNameForm.dataset.mode === "setup";
+
+    logoutButton?.addEventListener("click", async () => {
+      logoutButton.disabled = true;
+      try {
+        await signOutToLogin();
+      } catch {
+        errorMessage.textContent = "ログアウトできませんでした。もう一度お試しください";
+        logoutButton.disabled = false;
+      }
+    });
+
+    window.addEventListener("pagehide", () => {
+      watchedNameForm.hidden = true;
+      input.value = "";
+    });
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) location.reload();
+    });
+
+    try {
+      const user = await getVerifiedUser();
+      if (!user) {
+        location.replace("login.html");
+        return;
+      }
+
+      const key = watchedNameKey(user);
+      const savedName = localStorage.getItem(key) ?? "";
+      if (isFirstSetup && savedName) {
+        location.replace("index.html");
+        return;
+      }
+      if (!isFirstSetup && !savedName) {
+        location.replace("setup.html");
+        return;
+      }
+
+      input.value = savedName;
+      input.addEventListener("input", () => { errorMessage.textContent = ""; });
+      watchedNameForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = input.value.trim();
+        if (!name || name.length > input.maxLength) {
+          errorMessage.textContent = "名前を1〜40文字で入力してください";
+          input.focus();
+          return;
+        }
+
+        try {
+          localStorage.setItem(key, name);
+          location.replace("index.html");
+        } catch {
+          errorMessage.textContent = "名前を保存できませんでした。ブラウザーの保存設定を確認してください";
+        }
+      });
+
+      status.textContent = "";
+      watchedNameForm.hidden = false;
+      input.focus();
+    } catch (error) {
+      status.textContent = "";
+      errorMessage.textContent = error.name === "SecurityError"
+        ? "名前を読み込めませんでした。ブラウザーの保存設定を確認してください"
+        : authErrorMessage(error, "ログイン状態を確認できませんでした。ページを再読み込みしてください");
+    }
+  }
+
   function setupDashboard() {
     const sessionCheck = document.getElementById("session-check");
     const sessionMessage = document.getElementById("session-message");
     const retry = document.getElementById("retry-session");
     const logoutButton = document.getElementById("logout");
+    const watchedName = document.getElementById("watched-name");
 
     async function logout() {
       logoutButton.disabled = true;
       try {
-        const { auth, authSdk } = await getFirebase();
-        await authSdk.signOut(auth);
+        await signOutToLogin();
         dashboard.hidden = true;
-        location.replace("login.html");
       } catch {
         sessionCheck.hidden = false;
         sessionMessage.textContent = "ログアウトできませんでした。もう一度お試しください";
@@ -190,24 +297,24 @@
       sessionMessage.textContent = "ログイン状態を確認しています…";
 
       try {
-        const { auth } = await getFirebase();
-        const user = auth.currentUser;
+        const user = await getVerifiedUser();
         if (!user) {
           location.replace("login.html");
           return;
         }
 
-        // Firebase公式APIでトークンを更新し、セッションを確認する。
-        // https://firebase.google.com/docs/reference/js/auth.user#usergetidtoken
-        await user.getIdToken(true);
+        const savedName = localStorage.getItem(watchedNameKey(user));
+        if (!savedName) {
+          location.replace("setup.html");
+          return;
+        }
+        watchedName.textContent = savedName;
         sessionCheck.hidden = true;
         dashboard.hidden = false;
       } catch (error) {
-        if (["auth/user-disabled", "auth/user-token-expired", "auth/invalid-user-token", "auth/user-not-found"].includes(error.code)) {
-          await logout();
-          return;
-        }
-        sessionMessage.textContent = authErrorMessage(error, "ログイン状態を確認できませんでした");
+        sessionMessage.textContent = error.name === "SecurityError"
+          ? "名前を読み込めませんでした。ブラウザーの保存設定を確認してください"
+          : authErrorMessage(error, "ログイン状態を確認できませんでした");
         retry.hidden = false;
       }
     }
@@ -227,5 +334,6 @@
   }
 
   if (loginForm && registerForm) setupLoginForms();
+  if (watchedNameForm) setupWatchedNameForm();
   if (dashboard) setupDashboard();
 })();

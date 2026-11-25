@@ -20,10 +20,21 @@ body {
 
 /* タイトル */
 .site-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     margin: 0 0 16px;
     text-align: center;
     color: #2c7a7b;
     font-size: 2rem;
+    font-weight: 700;
+}
+
+.name-page-title {
+    margin: 0 0 12px;
+    text-align: center;
+    font-size: 1.25rem;
 }
 
 /* メッセージ */
@@ -38,6 +49,8 @@ body {
     display: flex;
     flex-direction: column;
 }
+
+.auth-form[hidden] { display: none; }
 
 /* ラベル */
 .auth-form label {
@@ -101,6 +114,16 @@ body {
 }
 
 .auth-switch a { color: #246b6c; }
+
+.text-button {
+    padding: 8px;
+    border: 0;
+    background: none;
+    color: #246b6c;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
 
 #registerTitle { font-size: 1rem; }
 

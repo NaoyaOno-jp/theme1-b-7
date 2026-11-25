@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>設定 | イキテル</title>
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+  <link rel="stylesheet" href="login.css?v=watched-name-1">
+  <script src="login.js?v=watched-name-1" defer></script>
+</head>
+<body>
+  <main class="login-container">
+    <p class="site-title"><img src="logo.svg" width="40" height="40" alt="">イキテル</p>
+    <h1 class="name-page-title">設定</h1>
+    <p id="nameStatus" class="form-status" role="status">ログイン状態を確認しています…</p>
+    <form id="watchedNameForm" class="auth-form" data-mode="settings" method="post" hidden>
+      <label for="watchedNameInput">計測対象の名前</label>
+      <input type="text" id="watchedNameInput" maxlength="40" required>
+      <button type="submit">変更を保存</button>
+    </form>
+    <p id="nameError" class="form-error" role="alert"></p>
+    <p class="auth-switch"><a href="index.html">見守り画面に戻る</a></p>
+    <noscript>設定の変更にはJavaScriptを有効にしてください。</noscript>
+  </main>
+</body>
+</html>
