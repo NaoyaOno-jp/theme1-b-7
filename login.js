@@ -1,79 +1,70 @@
 (() => {
-  const POCKETBASE_URL = "http://127.0.0.1:8090";
-  const TOKEN_KEY = "ikiteru.authToken";
+  // Firebaseコンソールのウェブアプリ設定から転記した認証用の項目。
+  const firebaseConfig = {
+    apiKey: "AIzaSyA-g4XSUUJFuOxELoi4hVBs0tauCYKvaNk",
+    authDomain: "ikiteru-d1e3d.firebaseapp.com",
+    projectId: "ikiteru-d1e3d",
+    appId: "1:979880283346:web:63088743315e65b235310b",
+  };
 
-  // PocketBaseの公式REST API仕様に基づき、このアプリ用に書いた共通のPOST処理。
-  async function postToUsers(action, options) {
-    const response = await fetch(`${POCKETBASE_URL}/api/collections/users/${action}`, {
-      ...options,
-      method: "POST",
-      redirect: "error",
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!response.ok) {
-      const error = new Error("PocketBaseへのリクエストに失敗しました");
-      error.status = response.status;
-      throw error;
-    }
-
-    return response.json();
-  }
-
-  async function requestToken(action, options) {
-    const { token } = await postToUsers(action, options);
-    if (typeof token !== "string" || !token) {
-      throw new Error("PocketBaseの応答に認証トークンがありません");
-    }
-    return token;
-  }
-
-  const form = document.getElementById("loginForm");
-  if (form) {
-    const button = form.querySelector("button[type=submit]");
-    const errorMessage = document.getElementById("errorMessage");
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      if (button.disabled) return;
-      button.disabled = true;
-      button.textContent = "ログイン中…";
-      errorMessage.textContent = "";
-
-      try {
-        // PocketBase公式仕様「Auth with password」。identity と password を送る。
-        // https://pocketbase.io/docs/api-records/#auth-with-password
-        const token = await requestToken("auth-with-password", {
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            identity: form.elements.email.value.trim(),
-            password: form.elements.password.value,
-          }),
-        });
-        sessionStorage.setItem(TOKEN_KEY, token);
-        form.elements.password.value = "";
-        location.replace("index.html");
-      } catch (error) {
-        if (error.status === 400 || error.status === 401) {
-          errorMessage.textContent = "メールアドレスまたはパスワードが正しくありません";
-        } else if (error.status === 429) {
-          errorMessage.textContent = "時間をおいてから、もう一度ログインしてください";
-        } else {
-          errorMessage.textContent = "ログインできませんでした。接続を確認してもう一度お試しください";
-        }
-        button.disabled = false;
-        button.textContent = "ログイン";
-      }
-    });
-
-    button.disabled = false;
-  }
-
+  const configured = Object.values(firebaseConfig).every(Boolean);
+  const canUseAuth = configured && location.protocol !== "file:";
+  const loginForm = document.getElementById("loginForm");
   const registerForm = document.getElementById("registerForm");
-  if (registerForm) {
+  const dashboard = document.getElementById("dashboard");
+  let authSetup;
+
+  // 読み込み方はFirebase公式資料を参照。アプリの初期化と画面処理はイキテル用の実装。
+  // https://firebase.google.com/docs/web/alt-setup#from-the-cdn
+  // https://firebase.google.com/docs/auth/web/auth-state-persistence
+  function getFirebase() {
+    authSetup ??= Promise.all([
+      import("https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js"),
+    ]).then(async ([appSdk, authSdk]) => {
+      const app = appSdk.initializeApp(firebaseConfig);
+      const auth = authSdk.initializeAuth(app, {
+        persistence: authSdk.browserSessionPersistence,
+      });
+      await auth.authStateReady();
+      return { auth, authSdk };
+    });
+    return authSetup;
+  }
+
+  function authErrorMessage(error, fallback) {
+    switch (error.code) {
+      case "auth/network-request-failed":
+        return "Firebaseに接続できません。通信状況を確認してください";
+      case "auth/too-many-requests":
+        return "時間をおいてからもう一度お試しください";
+      case "auth/configuration-not-found":
+      case "auth/operation-not-allowed":
+        return "メールアドレスでの認証が有効になっていません。管理者にお問い合わせください";
+      case "auth/invalid-email":
+        return "メールアドレスの形式をご確認ください";
+      case "auth/email-already-in-use":
+        return "登録済みの場合はログインしてください";
+      case "auth/weak-password":
+      case "auth/password-does-not-meet-requirements":
+        return "パスワードの条件を満たしているかご確認ください";
+      case "auth/invalid-credential":
+      case "auth/wrong-password":
+      case "auth/user-not-found":
+      case "auth/user-disabled":
+        return "メールアドレスまたはパスワードをご確認ください";
+      default:
+        return fallback;
+    }
+  }
+
+  async function setupLoginForms() {
     const loginPanel = document.getElementById("login");
     const registerPanel = document.getElementById("register");
-    const button = registerForm.querySelector("button[type=submit]");
+    const loginButton = loginForm.querySelector("button[type=submit]");
+    const registerButton = registerForm.querySelector("button[type=submit]");
+    const availability = document.getElementById("authAvailability");
+    const loginError = document.getElementById("errorMessage");
     const registrationError = document.getElementById("registrationError");
     const registrationSuccess = document.getElementById("registrationSuccess");
 
@@ -81,88 +72,115 @@
       const registering = location.hash === "#register";
       loginPanel.hidden = registering;
       registerPanel.hidden = !registering;
+      if (registering) registrationSuccess.textContent = "";
+      if (moveFocus) (registering ? registerForm : loginForm).elements.email.focus();
+    }
 
-      if (registering) {
-        registrationSuccess.textContent = "";
-      }
-      if (moveFocus) {
-        const activeForm = registering ? registerForm : form;
-        activeForm.elements.email.focus();
-      }
+    function setSubmitting(submitting) {
+      loginButton.disabled = submitting;
+      registerButton.disabled = submitting;
     }
 
     window.addEventListener("hashchange", () => showAuthPanel(true));
     showAuthPanel();
 
+    if (!canUseAuth) {
+      availability.textContent = location.protocol === "file:"
+        ? "ログインと新規登録にはWebサーバーからこのページを開いてください"
+        : "Firebaseの設定が未完了です。現在はログインと新規登録を利用できません";
+      return;
+    }
+
+    availability.textContent = "認証を準備しています…";
+    let firebase;
+    try {
+      firebase = await getFirebase();
+    } catch {
+      availability.textContent = "Firebaseの読み込みに失敗しました。ページを再読み込みしてください";
+      return;
+    }
+    availability.textContent = "";
+    const { auth, authSdk } = firebase;
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (loginButton.disabled) return;
+      setSubmitting(true);
+      loginButton.textContent = "ログイン中…";
+      loginError.textContent = "";
+
+      try {
+        // Firebase公式のメール認証API。フォーム処理はこのアプリ用に実装。
+        // https://firebase.google.com/docs/auth/web/password-auth#sign_in_a_user_with_an_email_address_and_password
+        await authSdk.signInWithEmailAndPassword(
+          auth, loginForm.elements.email.value.trim(), loginForm.elements.password.value
+        );
+        loginForm.elements.password.value = "";
+        location.replace("index.html");
+      } catch (error) {
+        loginError.textContent = authErrorMessage(error, "ログインできませんでした。もう一度お試しください");
+        loginButton.textContent = "ログイン";
+        setSubmitting(false);
+      }
+    });
+
     registerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      if (button.disabled) return;
+      if (registerButton.disabled) return;
       registrationError.textContent = "";
 
-      if (location.protocol === "file:") {
-        registrationError.textContent = "新規登録には、http://127.0.0.1:5500/login.html を開いてください";
-        return;
-      }
-
-      const email = registerForm.elements.email.value.trim();
-      const password = registerForm.elements.password.value;
-      const passwordConfirm = registerForm.elements.passwordConfirm.value;
-      if (password !== passwordConfirm) {
+      const { email, password, passwordConfirm } = registerForm.elements;
+      if (password.value !== passwordConfirm.value) {
         registrationError.textContent = "確認用のパスワードが一致しません";
-        registerForm.elements.passwordConfirm.focus();
+        passwordConfirm.focus();
         return;
       }
 
-      button.disabled = true;
-      button.textContent = "登録中…";
+      const address = email.value.trim();
+      setSubmitting(true);
+      registerButton.textContent = "登録中…";
       try {
-        // PocketBase公式仕様「Create record」を参照し、このアプリ用に利用者を登録する。
-        // https://pocketbase.io/docs/api-records/#create-record
-        await postToUsers("records", {
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, passwordConfirm }),
-        });
+        // Firebase公式のアカウント作成API。登録後にログイン画面へ戻す処理はこのアプリ用。
+        // https://firebase.google.com/docs/auth/web/password-auth#create_a_password-based_account
+        await authSdk.createUserWithEmailAndPassword(auth, address, password.value);
+        await authSdk.signOut(auth);
 
         registerForm.reset();
-        form.elements.email.value = email;
-        form.elements.password.value = "";
-        document.getElementById("errorMessage").textContent = "";
+        loginForm.elements.email.value = address;
+        loginForm.elements.password.value = "";
+        loginError.textContent = "";
         history.replaceState(null, "", "#login");
         showAuthPanel(true);
         registrationSuccess.textContent = "登録が完了しました。パスワードを入力してログインしてください";
       } catch (error) {
-        if (error.status === 400) {
-          registrationError.textContent = "入力内容を確認してください。登録済みの場合はログインしてください";
-        } else if (error.status === 403) {
-          registrationError.textContent = "PocketBaseで新規登録が無効になっています。管理者にお問い合わせください";
-        } else if (error.status === 404) {
-          registrationError.textContent = "PocketBaseに登録先がありません。管理者にお問い合わせください";
-        } else if (error.status === 429) {
-          registrationError.textContent = "時間をおいてから、もう一度登録してください";
-        } else if (error instanceof TypeError || error.name === "TimeoutError") {
-          registrationError.textContent = "PocketBaseに接続できません。サーバーの起動状況を確認してください";
-        } else {
-          registrationError.textContent = "新規登録できませんでした。時間をおいてもう一度お試しください";
-        }
+        registrationError.textContent = authErrorMessage(error, "新規登録できませんでした。もう一度お試しください");
       } finally {
-        button.disabled = false;
-        button.textContent = "登録する";
+        registerButton.textContent = "登録する";
+        setSubmitting(false);
       }
     });
 
-    button.disabled = false;
+    setSubmitting(false);
   }
 
-  const dashboard = document.getElementById("dashboard");
-  if (dashboard) {
+  function setupDashboard() {
     const sessionCheck = document.getElementById("session-check");
     const sessionMessage = document.getElementById("session-message");
     const retry = document.getElementById("retry-session");
+    const logoutButton = document.getElementById("logout");
 
-    function logout() {
-      dashboard.hidden = true;
-      sessionStorage.removeItem(TOKEN_KEY);
-      location.replace("login.html");
+    async function logout() {
+      logoutButton.disabled = true;
+      try {
+        const { auth, authSdk } = await getFirebase();
+        await authSdk.signOut(auth);
+        dashboard.hidden = true;
+        location.replace("login.html");
+      } catch {
+        sessionCheck.hidden = false;
+        sessionMessage.textContent = "ログアウトできませんでした。もう一度お試しください";
+        logoutButton.disabled = false;
+      }
     }
 
     async function verifySession() {
@@ -172,36 +190,42 @@
       sessionMessage.textContent = "ログイン状態を確認しています…";
 
       try {
-        const token = sessionStorage.getItem(TOKEN_KEY);
-        if (!token) {
-          logout();
+        const { auth } = await getFirebase();
+        const user = auth.currentUser;
+        if (!user) {
+          location.replace("login.html");
           return;
         }
 
-        // PocketBase公式仕様「Auth refresh」。Authorization に認証トークンを送る。
-        // https://pocketbase.io/docs/api-records/#auth-refresh
-        const refreshedToken = await requestToken("auth-refresh", {
-          headers: { Authorization: token },
-        });
-        sessionStorage.setItem(TOKEN_KEY, refreshedToken);
+        // Firebase公式APIでトークンを更新し、セッションを確認する。
+        // https://firebase.google.com/docs/reference/js/auth.user#usergetidtoken
+        await user.getIdToken(true);
         sessionCheck.hidden = true;
         dashboard.hidden = false;
       } catch (error) {
-        if ([401, 403, 404].includes(error.status)) {
-          logout();
+        if (["auth/user-disabled", "auth/user-token-expired", "auth/invalid-user-token", "auth/user-not-found"].includes(error.code)) {
+          await logout();
           return;
         }
-        sessionMessage.textContent = "ログイン状態を確認できませんでした。接続をご確認ください";
+        sessionMessage.textContent = authErrorMessage(error, "ログイン状態を確認できませんでした");
         retry.hidden = false;
       }
     }
 
-    document.getElementById("logout").addEventListener("click", logout);
-    retry.addEventListener("click", verifySession);
+    if (!canUseAuth) {
+      location.replace("login.html");
+      return;
+    }
+
+    logoutButton.addEventListener("click", logout);
+    retry.addEventListener("click", () => location.reload());
     window.addEventListener("pagehide", () => { dashboard.hidden = true; });
     window.addEventListener("pageshow", (event) => {
       if (event.persisted) verifySession();
     });
     verifySession();
   }
+
+  if (loginForm && registerForm) setupLoginForms();
+  if (dashboard) setupDashboard();
 })();
