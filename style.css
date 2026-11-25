@@ -234,25 +234,4 @@ p { margin: 0; }
 .btn-call    { background: #1F2937; color: #FFFFFF; border: none; }
 .btn-confirm { background: #FFFFFF; color: #155E33; border: 2px solid var(--color-ok); }
 .btn-away    { background: #FFFFFF; color: #27272A; border: 2px solid #D4D4D8; }
-.btn:focus-visible, .demo-btn:focus-visible { outline: 3px solid #2563EB; outline-offset: 2px; }
-
-/* ---------- デモ操作（発表用） ---------- */
-.demo-panel {
-  margin: 0 20px 24px;
-  padding: 14px 16px;
-  border: 2px dashed #A8A29E;
-  border-radius: 16px;
-  background: #FFFFFF;
-}
-.demo-title { margin: 0 0 4px; font-size: 14px; }
-.demo-clock { font-size: 13px; color: var(--color-sub); margin-bottom: 10px; }
-.demo-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.demo-btn {
-  min-height: 44px;
-  border-radius: 10px;
-  border: 1px solid #D4D4D8;
-  background: #F5F5F4;
-  font-family: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
+.btn:focus-visible { outline: 3px solid #2563EB; outline-offset: 2px; }

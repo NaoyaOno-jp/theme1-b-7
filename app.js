@@ -204,11 +204,7 @@ function render() {
 
   // ⑤ 直近の記録（新しい順）
   renderRecords();
-
-  // デモ操作の表示
-  $('#demo-clock').textContent = formatDayTime(t);
-  $('#demo-light').textContent = demo.lightIsOn ? '電気を消す' : '電気をつける';
-  $('#demo-off').textContent = demo.relayPlugged ? '中継器を抜く' : '中継器を差す';
+  publishDemoState();
 }
 
 function renderRecords() {
@@ -258,11 +254,57 @@ $('#btn-away').addEventListener('click', () => {
 
 
 // ---------------------------------------------------------------------
-// 8. デモ操作（中継器の代わり）
+// 8. 別タブのデモ操作ページとの同期
 // ---------------------------------------------------------------------
+const dashboard = $('#dashboard');
+const demoChannel = typeof BroadcastChannel === 'function'
+  ? new BroadcastChannel('ikiteru-theme1-b-7:demo')
+  : null;
+
+function publishDemoState() {
+  if (!demoChannel || dashboard.hidden) return;
+  demoChannel.postMessage({
+    type: 'state',
+    clock: formatDayTime(now()),
+    lightIsOn: demo.lightIsOn,
+    relayPlugged: demo.relayPlugged,
+  });
+}
+
+if (demoChannel) {
+  demoChannel.addEventListener('message', ({ data }) => {
+    if (dashboard.hidden) return;
+
+    switch (data?.type) {
+      case 'request-state':
+        publishDemoState();
+        break;
+      case 'toggle-light':
+        toggleDemoLight();
+        break;
+      case 'toggle-relay':
+        toggleDemoRelay();
+        break;
+      case 'advance-hour':
+        advanceClock(HOUR);
+        break;
+      case 'advance-to-threshold':
+        advanceClock(THRESHOLD_HOURS * HOUR);
+        break;
+    }
+  });
+
+  new MutationObserver(() => {
+    if (dashboard.hidden) {
+      demoChannel.postMessage({ type: 'disconnected' });
+    } else {
+      publishDemoState();
+    }
+  }).observe(dashboard, { attributes: true, attributeFilter: ['hidden'] });
+}
 
 // 電気をつける／消す：中継器が差さっているときだけ入力が届く
-$('#demo-light').addEventListener('click', () => {
+function toggleDemoLight() {
   demo.lightIsOn = !demo.lightIsOn;
   if (demo.relayPlugged) {
     receiveLightEvent(demo.lightIsOn ? 'on' : 'off');
@@ -270,10 +312,10 @@ $('#demo-light').addEventListener('click', () => {
     console.log('[デモ] 中継器が抜けているので、照明の入力は届きません');
     render();
   }
-});
+}
 
 // 中継器を抜く／差す
-$('#demo-off').addEventListener('click', () => {
+function toggleDemoRelay() {
   if (demo.relayPlugged) {
     // 切られた入力：信号が止まる。30分待つ代わりに時計を30分進める
     demo.relayPlugged = false;
@@ -284,11 +326,7 @@ $('#demo-off').addEventListener('click', () => {
     receiveHeartbeat();
   }
   render();
-});
-
-// 時計を進める
-$('#demo-1h').addEventListener('click', () => advanceClock(1 * HOUR));
-$('#demo-16h').addEventListener('click', () => advanceClock(THRESHOLD_HOURS * HOUR));
+}
 
 function advanceClock(ms) {
   demoOffsetMs += ms;
