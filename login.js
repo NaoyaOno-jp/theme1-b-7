@@ -2,8 +2,8 @@
   const POCKETBASE_URL = "http://127.0.0.1:8090";
   const TOKEN_KEY = "ikiteru.authToken";
 
-  // PocketBaseの公式REST API仕様に基づき、このアプリ用に書いた共通の認証処理。
-  async function requestToken(action, options) {
+  // PocketBaseの公式REST API仕様に基づき、このアプリ用に書いた共通のPOST処理。
+  async function postToUsers(action, options) {
     const response = await fetch(`${POCKETBASE_URL}/api/collections/users/${action}`, {
       ...options,
       method: "POST",
@@ -12,12 +12,16 @@
     });
 
     if (!response.ok) {
-      const error = new Error("PocketBaseの認証に失敗しました");
+      const error = new Error("PocketBaseへのリクエストに失敗しました");
       error.status = response.status;
       throw error;
     }
 
-    const { token } = await response.json();
+    return response.json();
+  }
+
+  async function requestToken(action, options) {
+    const { token } = await postToUsers(action, options);
     if (typeof token !== "string" || !token) {
       throw new Error("PocketBaseの応答に認証トークンがありません");
     }
@@ -59,6 +63,81 @@
         }
         button.disabled = false;
         button.textContent = "ログイン";
+      }
+    });
+
+    button.disabled = false;
+  }
+
+  const registerForm = document.getElementById("registerForm");
+  if (registerForm) {
+    const loginPanel = document.getElementById("login");
+    const registerPanel = document.getElementById("register");
+    const button = registerForm.querySelector("button[type=submit]");
+    const registrationError = document.getElementById("registrationError");
+    const registrationSuccess = document.getElementById("registrationSuccess");
+
+    function showAuthPanel(moveFocus = false) {
+      const registering = location.hash === "#register";
+      loginPanel.hidden = registering;
+      registerPanel.hidden = !registering;
+
+      if (registering) {
+        registrationSuccess.textContent = "";
+      }
+      if (moveFocus) {
+        const activeForm = registering ? registerForm : form;
+        activeForm.elements.email.focus();
+      }
+    }
+
+    window.addEventListener("hashchange", () => showAuthPanel(true));
+    showAuthPanel();
+
+    registerForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (button.disabled) return;
+      registrationError.textContent = "";
+
+      const email = registerForm.elements.email.value.trim();
+      const password = registerForm.elements.password.value;
+      const passwordConfirm = registerForm.elements.passwordConfirm.value;
+      if (password !== passwordConfirm) {
+        registrationError.textContent = "確認用のパスワードが一致しません";
+        registerForm.elements.passwordConfirm.focus();
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "登録中…";
+      try {
+        // PocketBase公式仕様「Create record」を参照し、このアプリ用に利用者を登録する。
+        // https://pocketbase.io/docs/api-records/#create-record
+        await postToUsers("records", {
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, passwordConfirm }),
+        });
+
+        registerForm.reset();
+        form.elements.email.value = email;
+        form.elements.password.value = "";
+        document.getElementById("errorMessage").textContent = "";
+        history.replaceState(null, "", "#login");
+        showAuthPanel(true);
+        registrationSuccess.textContent = "登録が完了しました。パスワードを入力してログインしてください";
+      } catch (error) {
+        if (error.status === 400) {
+          registrationError.textContent = "登録できませんでした。メールアドレスとパスワードをご確認ください";
+        } else if (error.status === 403) {
+          registrationError.textContent = "現在、新規登録を受け付けていません";
+        } else if (error.status === 429) {
+          registrationError.textContent = "時間をおいてから、もう一度登録してください";
+        } else {
+          registrationError.textContent = "新規登録できませんでした。接続を確認してもう一度お試しください";
+        }
+      } finally {
+        button.disabled = false;
+        button.textContent = "登録する";
       }
     });
 

@@ -34,19 +34,19 @@ body {
 }
 
 /* フォーム */
-#loginForm {
+.auth-form {
     display: flex;
     flex-direction: column;
 }
 
 /* ラベル */
-#loginForm label {
+.auth-form label {
     margin-bottom: 6px;
     font-weight: bold;
 }
 
 /* 入力欄 */
-#loginForm input {
+.auth-form input {
     margin-bottom: 16px;
     padding: 12px;
     font-size: 1rem;
@@ -55,14 +55,14 @@ body {
     box-sizing: border-box;
 }
 
-#loginForm input:focus {
+.auth-form input:focus {
     outline: none;
     border-color: #2c7a7b;
     box-shadow: 0 0 4px rgba(44, 122, 123, 0.4);
 }
 
 /* ボタン */
-#loginForm button {
+.auth-form button {
     padding: 12px;
     font-size: 1rem;
     color: #ffffff;
@@ -73,27 +73,42 @@ body {
     transition: background-color 0.2s;
 }
 
-#loginForm button:hover {
+.auth-form button:hover {
     background-color: #246b6c;
 }
 
-#loginForm button:disabled {
+.auth-form button:disabled {
     opacity: 0.65;
     cursor: default;
 }
 
-/* エラーメッセージ */
-#errorMessage {
-    margin-top: 16px;
+/* 入力結果と画面切り替え */
+.form-error,
+.form-status {
+    margin: 16px 0;
     text-align: center;
-    color: #d93025;
     font-weight: bold;
 }
+
+.form-error { color: #d93025; }
+.form-status { color: #246b6c; }
+.form-error:empty,
+.form-status:empty { margin: 0; }
+
+.auth-switch {
+    margin: 16px 0 0;
+    text-align: center;
+}
+
+.auth-switch a { color: #246b6c; }
+
+#registerTitle { font-size: 1rem; }
 
 /* スマホ対応 */
 @media (max-width: 480px) {
     .login-container {
-        margin: 32px 16px;
+        width: calc(100% - 32px);
+        margin: 32px auto;
         padding: 24px;
     }
 

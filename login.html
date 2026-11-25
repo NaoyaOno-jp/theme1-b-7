@@ -14,44 +14,45 @@
 
         <h1 class="site-title">イキテル</h1>
 
-        <p class="login-message">
-            ログインしてください
-        </p>
+        <section id="login" aria-label="ログイン">
+            <p class="login-message">ログインしてください</p>
+            <p id="registrationSuccess" class="form-status" role="status"></p>
 
-        <form id="loginForm" method="post">
+            <form id="loginForm" class="auth-form" method="post">
+                <label for="email">ログインID（メールアドレス）</label>
+                <input type="email" id="email" name="email" autocomplete="username" required>
 
-            <label for="email">
-                ログインID（メールアドレス）
-            </label>
+                <label for="password">パスワード</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
 
-            <input
-                type="email"
-                id="email"
-                name="email"
-                autocomplete="username"
-                required
-            >
+                <button type="submit" disabled>ログイン</button>
+            </form>
 
-            <label for="password">
-                パスワード
-            </label>
+            <p id="errorMessage" class="form-error" role="alert"></p>
+            <p class="auth-switch"><a href="#register">新規登録</a></p>
+        </section>
 
-            <input
-                type="password"
-                id="password"
-                name="password"
-                autocomplete="current-password"
-                required
-            >
+        <section id="register" aria-labelledby="registerTitle" hidden>
+            <h2 id="registerTitle" class="login-message">新規登録</h2>
 
-            <button type="submit" disabled>
-                ログイン
-            </button>
+            <form id="registerForm" class="auth-form" method="post">
+                <label for="registerEmail">メールアドレス</label>
+                <input type="email" id="registerEmail" name="email" autocomplete="username" required>
 
-        </form>
+                <label for="registerPassword">パスワード（8文字以上）</label>
+                <input type="password" id="registerPassword" name="password" autocomplete="new-password" minlength="8" required>
 
-        <p id="errorMessage" role="alert"></p>
-        <noscript>ログインにはJavaScriptを有効にしてください。</noscript>
+                <label for="registerPasswordConfirm">パスワード（確認）</label>
+                <input type="password" id="registerPasswordConfirm" name="passwordConfirm" autocomplete="new-password" required>
+
+                <button type="submit" disabled>登録する</button>
+            </form>
+
+            <p id="registrationError" class="form-error" role="alert"></p>
+            <p class="auth-switch"><a href="#login">ログインに戻る</a></p>
+        </section>
+
+        <noscript>ログインと新規登録にはJavaScriptを有効にしてください。</noscript>
 
     </main>
 

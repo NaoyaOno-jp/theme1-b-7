@@ -3,9 +3,10 @@
 ## ログイン付きデモの起動（Windows）
 
 1. [PocketBase公式ダウンロード](https://pocketbase.io/docs/)からWindows版を取得し、このリポジトリの外に展開します。展開先で PowerShell を開き、`./pocketbase.exe serve` を実行します。
-2. 初回起動時の案内に沿って管理者を作成します。管理画面（`http://127.0.0.1:8090/_/`）の認証コレクション `users` に、デモ用のメールアドレスとパスワードを持つ利用者を追加します。`users` の Password authentication を有効にし、Identity field に `email` を指定します。
+2. 初回起動時の案内に沿って管理者を作成します。管理画面（`http://127.0.0.1:8090/_/`）で認証コレクション `users` の Password authentication を有効にし、Identity field に `email` を指定します。
+   - 新規登録を使うには、`users` の編集画面で **API Rules → Create rule** のロックを解除し、`@request.auth.id = "" && @request.body.verified:isset = false` を設定して保存します。
 3. 別の PowerShell をこのリポジトリで開き、`python -m http.server 5500 --bind 127.0.0.1` を実行します。VS Code の Live Server でも開けます。
-4. ブラウザーで `http://127.0.0.1:5500/index.html` を開き、手順2で追加した利用者でログインします。ログイン状態は同じタブの再読み込み後も引き継がれます。
+4. ブラウザーで `http://127.0.0.1:5500/index.html` を開きます。ログイン画面の下にある「新規登録」でアカウントを作成し、登録したメールアドレスとパスワードでログインします。ログイン状態は同じタブの再読み込み後も引き継がれます。
 
 PocketBase の接続先は `login.js` の `POCKETBASE_URL` で変更できます。見守り画面はブラウザー側で表示を切り替えるデモです。実際の見守りデータを扱う場合は HTTPS を使い、PocketBase の [APIルール](https://pocketbase.io/docs/api-rules-and-filters/) で利用者ごとのアクセスを制限してください。
 
