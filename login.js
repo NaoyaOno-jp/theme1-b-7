@@ -99,6 +99,11 @@
       if (button.disabled) return;
       registrationError.textContent = "";
 
+      if (location.protocol === "file:") {
+        registrationError.textContent = "新規登録には、http://127.0.0.1:5500/login.html を開いてください";
+        return;
+      }
+
       const email = registerForm.elements.email.value.trim();
       const password = registerForm.elements.password.value;
       const passwordConfirm = registerForm.elements.passwordConfirm.value;
@@ -127,13 +132,17 @@
         registrationSuccess.textContent = "登録が完了しました。パスワードを入力してログインしてください";
       } catch (error) {
         if (error.status === 400) {
-          registrationError.textContent = "登録できませんでした。メールアドレスとパスワードをご確認ください";
+          registrationError.textContent = "入力内容を確認してください。登録済みの場合はログインしてください";
         } else if (error.status === 403) {
-          registrationError.textContent = "現在、新規登録を受け付けていません";
+          registrationError.textContent = "PocketBaseで新規登録が無効になっています。管理者にお問い合わせください";
+        } else if (error.status === 404) {
+          registrationError.textContent = "PocketBaseに登録先がありません。管理者にお問い合わせください";
         } else if (error.status === 429) {
           registrationError.textContent = "時間をおいてから、もう一度登録してください";
+        } else if (error instanceof TypeError || error.name === "TimeoutError") {
+          registrationError.textContent = "PocketBaseに接続できません。サーバーの起動状況を確認してください";
         } else {
-          registrationError.textContent = "新規登録できませんでした。接続を確認してもう一度お試しください";
+          registrationError.textContent = "新規登録できませんでした。時間をおいてもう一度お試しください";
         }
       } finally {
         button.disabled = false;

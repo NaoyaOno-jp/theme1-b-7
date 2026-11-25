@@ -8,6 +8,15 @@
 3. 別の PowerShell をこのリポジトリで開き、`python -m http.server 5500 --bind 127.0.0.1` を実行します。VS Code の Live Server でも開けます。
 4. ブラウザーで `http://127.0.0.1:5500/index.html` を開きます。ログイン画面の下にある「新規登録」でアカウントを作成し、登録したメールアドレスとパスワードでログインします。ログイン状態は同じタブの再読み込み後も引き継がれます。
 
+このPCで `%LOCALAPPDATA%\Ikiteru\PocketBase` に設定済みのPocketBaseを再起動する場合は、PowerShellで次を実行します。
+
+```powershell
+Set-Location (Join-Path $env:LOCALAPPDATA 'Ikiteru\PocketBase')
+.\pocketbase.exe serve --http=127.0.0.1:8090 --origins=http://127.0.0.1:5500,http://localhost:5500 --dev=false
+```
+
+接続できない場合は、PocketBaseが起動中か [ヘルスチェック](http://127.0.0.1:8090/api/health) で確認できます。画面は手順3のサーバーを起動して [ログインページ](http://127.0.0.1:5500/login.html) から開いてください。
+
 PocketBase の接続先は `login.js` の `POCKETBASE_URL` で変更できます。見守り画面はブラウザー側で表示を切り替えるデモです。実際の見守りデータを扱う場合は HTTPS を使い、PocketBase の [APIルール](https://pocketbase.io/docs/api-rules-and-filters/) で利用者ごとのアクセスを制限してください。
 
 ## 誰の、どんな困りごとか
